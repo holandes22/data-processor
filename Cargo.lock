@@ -2,8 +2,11 @@
 name = "process"
 version = "0.1.0"
 dependencies = [
+ "amqp 0.0.9 (git+https://github.com/Antti/rust-amqp)",
+ "env_logger 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "glob 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.6.13 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.16 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -17,8 +20,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "aho-corasick"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "memchr 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "amqp"
+version = "0.0.9"
+source = "git+https://github.com/Antti/rust-amqp#95d0a792fbf7c8875935ef7fece9cda830754e40"
+dependencies = [
+ "bit-vec 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "byteorder 0.3.13 (registry+https://github.com/rust-lang/crates.io-index)",
+ "enum_primitive 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "env_logger 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "url 0.2.37 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "bit-vec"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "bitflags"
 version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "byteorder"
+version = "0.3.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -30,6 +64,23 @@ dependencies = [
  "rustc-serialize 0.3.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.32 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 0.2.37 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "enum_primitive"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "num 0.1.27 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "env_logger"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "log 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "regex 0.1.41 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -126,12 +177,25 @@ version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "memchr"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "libc 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "mime"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "log 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "num"
+version = "0.1.27"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "num_cpus"
@@ -185,6 +249,21 @@ dependencies = [
  "libc 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "regex"
+version = "0.1.41"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "aho-corasick 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "memchr 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "regex-syntax 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "regex-syntax"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "rustc-serialize"
