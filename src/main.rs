@@ -6,6 +6,7 @@ extern crate hyper;
 extern crate env_logger;
 extern crate rustc_serialize;
 
+use std::env;
 use std::thread;
 use std::fs::File;
 use std::error::Error;
@@ -56,8 +57,12 @@ fn process(channel: &mut Channel, deliver: protocol::basic::Deliver, headers: pr
             }
         }
     }
+    let influxdb_host = match env::var("INFLUXDB_SERVICE_HOST") {
+        Ok(val) => val,
+        Err(e) => panic!("couldn't find service host for influxdb")
+    };
     let client = Client::new();
-    let res = client.post("http://influxdb:8086/write?db=mydb")
+    let res = client.post(&format!("http://{}:8086/write?db=mydb", influxdb_host))
         .body(&payload)
         .send()
         .unwrap();
@@ -68,14 +73,24 @@ fn process(channel: &mut Channel, deliver: protocol::basic::Deliver, headers: pr
 
 fn main() {
     env_logger::init().unwrap();
+
+    let influxdb_host = match env::var("INFLUXDB_SERVICE_HOST") {
+        Ok(val) => val,
+        Err(e) => panic!("couldn't find service host for influxdb")
+    };
+    let rabbitmq_host = match env::var("RABBITMQ_SERVICE_HOST") {
+        Ok(val) => val,
+        Err(e) => panic!("couldn't find service host for rabbitmq")
+    };
+
     let client = Client::new();
-    let res = client.get("http://influxdb:8086/query?q=CREATE DATABASE mydb")
+    let res = client.get(&format!("http://{}:8086/query?q=CREATE DATABASE mydb", influxdb_host))
         .send()
         .unwrap();
     assert_eq!(res.status, StatusCode::Ok);
 
-    let amqp_url = "amqp://rabbitmq//";
-    let mut session = match Session::open_url(amqp_url) {
+    let amqp_url = format!("amqp://{}//", rabbitmq_host);
+    let mut session = match Session::open_url(&amqp_url) {
         Ok(session) => session,
         Err(error) => panic!("Can't create session: {:?}", error)
     };

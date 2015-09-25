@@ -9,7 +9,7 @@ RUN mkdir -p /usr/src/app
 #ONBUILD COPY  wait_to_start usr/src/app/
 #COPY directly to /usr/src/app was not working
 #Took workaround from https://github.com/docker/docker/issues/7511
-COPY ./target/release/process wait_to_start /tmp/
-RUN cp /tmp/process /tmp/wait_to_start /usr/src/app && rm -rf /tmp/process /tmp/wait_to_start
+COPY ./target/release/process /tmp/
+RUN cp /tmp/process /usr/src/app && rm -rf /tmp/process
 
-CMD [ "RUST_LOG=debug", "./process" ]
+CMD [ "./process" ]
