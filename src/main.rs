@@ -22,52 +22,54 @@ use amqp::protocol;
 use amqp::table;
 use amqp::basic::Basic;
 use amqp::session::Session;
-use amqp::channel::{Channel, ConsumerCallBackFn};
+use amqp::channel::{Channel, Consumer};
 
+struct ProcessConsumer {
+    influxdb_host: String
+}
 
-fn process(channel: &mut Channel, deliver: protocol::basic::Deliver, headers: protocol::basic::BasicProperties, body: Vec<u8>){
-    let glob_path = String::from_utf8_lossy(&body);
-    info!("Got message with headers: {:?}", headers);
-    info!("Got glob path: {:?}", glob_path);
+impl Consumer for ProcessConsumer {
+    fn handle_delivery(&mut self, channel: &mut Channel, deliver: protocol::basic::Deliver, headers: protocol::basic::BasicProperties, body: Vec<u8>){
+        let glob_path = String::from_utf8_lossy(&body);
 
-    let mut payload = "".to_string();
-    for path in glob(&glob_path).unwrap().filter_map(Result::ok) {
-        debug!("Processing file path: {:?}", path);
-        let file = match File::open(&path) {
-            Ok(file) => file,
-            Err(why) => panic!("couldn't open {}: {}", path.display(),
-                                                       Error::description(&why)),
-        };
-        for line in BufReader::new(file).lines() {
-            let json = json::Json::from_str(&line.unwrap());
-            match json {
-                Ok(data) => {
-                    let obj = data.as_object().unwrap();
-                    let operation = obj.get("operation").unwrap().as_string().unwrap();
-                    let username = obj.get("username").unwrap().as_string().unwrap();
-                    let timestamp = obj.get("eventTime").unwrap().as_i64().unwrap() * 1000000;
-                    let timestamp = data.find_path(&["eventTime"]).unwrap();
-                    let stat = format!("operation_{},username={} value=1i {}\n", operation, username, timestamp);
-                    payload = payload + &stat;
+        info!("Got message with headers: {:?}", headers);
+        info!("Got glob path: {:?}", glob_path);
 
-                },
-                Err(e) => {
-                    error!("error parsing line: {:?}", e);
+        let mut payload = "".to_string();
+        for path in glob(&glob_path).unwrap().filter_map(Result::ok) {
+            debug!("Processing file path: {:?}", path);
+            let file = match File::open(&path) {
+                Ok(file) => file,
+                Err(why) => panic!("couldn't open {}: {}", path.display(),
+                                                           Error::description(&why)),
+            };
+            for line in BufReader::new(file).lines() {
+                let json = json::Json::from_str(&line.unwrap());
+                match json {
+                    Ok(data) => {
+                        let obj = data.as_object().unwrap();
+                        let operation = obj.get("operation").unwrap().as_string().unwrap();
+                        let username = obj.get("username").unwrap().as_string().unwrap();
+                        let timestamp = obj.get("eventTime").unwrap().as_i64().unwrap() * 1000000;
+                        let timestamp = data.find_path(&["eventTime"]).unwrap();
+                        let stat = format!("operation_{},username={} value=1i {}\n", operation, username, timestamp);
+                        payload = payload + &stat;
+
+                    },
+                    Err(e) => {
+                        error!("error parsing line: {:?}", e);
+                    }
                 }
             }
         }
+        let client = Client::new();
+        let res = client.post(&format!("http://{}:8086/write?db=mydb", &self.influxdb_host.to_string()))
+            .body(&payload)
+            .send()
+            .unwrap();
+        assert_eq!(res.status, StatusCode::NoContent);
+        channel.basic_ack(deliver.delivery_tag, false);
     }
-    let influxdb_host = match env::var("INFLUXDB_SERVICE_HOST") {
-        Ok(val) => val,
-        Err(e) => panic!("couldn't find service host for influxdb")
-    };
-    let client = Client::new();
-    let res = client.post(&format!("http://{}:8086/write?db=mydb", influxdb_host))
-        .body(&payload)
-        .send()
-        .unwrap();
-    assert_eq!(res.status, StatusCode::NoContent);
-    channel.basic_ack(deliver.delivery_tag, false);
 }
 
 
@@ -100,17 +102,10 @@ fn main() {
     //queue: &str, passive: bool, durable: bool, exclusive: bool, auto_delete: bool, nowait: bool, arguments: Table
     let queue_declared = channel.queue_declare(queue_name, false, false, false, false, false, table::new());
     info!("Queue {:?} declared", queue_name);
+    let process_consumer = ProcessConsumer { influxdb_host: influxdb_host };
     channel.basic_consume(
-        process as ConsumerCallBackFn, queue_name, "", false, false, false, false, table::new());
+        process_consumer, queue_name, "", false, false, false, false, table::new());
     channel.start_consuming();
-
-    let consumers_thread = thread::spawn(move || {
-        channel.start_consuming();
-        channel
-    });
-
-    // There is currently no way to stop the consumers, so we infinitely join thread.
-    let mut channel = consumers_thread.join().ok().expect("Can't get channel from consumer thread");
     channel.close(200, "Closing channel".to_string());
     session.close(200, "Closing session".to_string());
 }
