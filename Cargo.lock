@@ -4,6 +4,7 @@ version = "0.1.0"
 dependencies = [
  "amqp 0.0.9 (git+https://github.com/Antti/rust-amqp)",
  "env_logger 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "etcd 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "glob 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.6.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -81,6 +82,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "log 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 0.1.41 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "etcd"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "hyper 0.6.13 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustc-serialize 0.3.16 (registry+https://github.com/rust-lang/crates.io-index)",
+ "url 0.2.37 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
