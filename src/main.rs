@@ -31,10 +31,10 @@ use etcd::Client as EtcdClient;
 use chrono::{DateTime, UTC, Local, TimeZone};
 
 
-fn handle_json(file: &File) -> String {
+fn handle_json(buf_reader: BufReader<File>) -> String {
     debug!("Processing json");
     let mut payload = String::new();
-    for line in BufReader::new(file).lines() {
+    for line in buf_reader.lines() {
         let json = json::Json::from_str(&line.unwrap());
         match json {
             Ok(data) => {
@@ -55,14 +55,14 @@ fn handle_json(file: &File) -> String {
 }
 
 
-fn handle_text(file: &File) -> String {
+fn handle_text(buf_reader: BufReader<File>) -> String {
     debug!("Processing text");
     let mut payload = String::new();
     let date_re = Regex::new(r"(?P<date>\S*) (?P<time>[\d:]+)").unwrap();
     let username_re = Regex::new(r".*ugi=(?P<user>[\w]+)").unwrap();
     let operation_re = Regex::new(r".*cmd=(?P<operation>[\w]+)").unwrap();
 
-    for line in BufReader::new(file).lines() {
+    for line in buf_reader.lines() {
         let text = line.unwrap();
         let mut caps = date_re.captures(&text).unwrap();
         let timestamp = UTC.datetime_from_str(caps.at(0).unwrap(), "%Y-%m-%d %H:%M:%S").unwrap().timestamp();
@@ -78,8 +78,7 @@ fn handle_text(file: &File) -> String {
 
 
 struct ProcessConsumer {
-    influxdb_host: String,
-    log_format: String
+    influxdb_host: String
 }
 
 impl Consumer for ProcessConsumer {
@@ -98,18 +97,16 @@ impl Consumer for ProcessConsumer {
             };
             //TODO: should not be a conf set, just see if first line starts with "{" to
             // select json or not
-            match self.log_format.as_ref() {
-                "json" => {
-                    payload = handle_json(&file);
-                },
-                "text" => {
-                    payload = handle_text(&file);
-                },
-                _ => panic!("No handler for log type")
-            };
+            let buf_reader = BufReader::new(file);
+            let mut line = String::new();
+            if (line.starts_with("{")) {
+                payload = handle_json(buf_reader);
+            } else {
+                payload = handle_text(buf_reader);
+            }
         }
         let client = Client::new();
-        let res = client.post(&format!("http://{}:8086/write?db=mydb", &self.influxdb_host.to_string()))
+        let res = client.post(&format!("http://{}:8086/write?db=data_stats", &self.influxdb_host.to_string()))
             .body(&payload)
             .send()
             .unwrap();
@@ -131,6 +128,7 @@ fn main() {
         Ok(val) => val,
         Err(_) => panic!("couldn't find service host for rabbitmq")
     };
+    /*
     let etcd_host = match env::var("ETCD_SERVICE_HOST") {
         Ok(val) => val,
         Err(_) => panic!("couldn't find service host for etcd")
@@ -139,13 +137,7 @@ fn main() {
     let etcd_client = EtcdClient::new(&format!("http://{}:4001/", etcd_host)).unwrap();
     let response = etcd_client.get("/hdfs/log_format", false, false).ok().unwrap();
     let log_format = response.node.value.unwrap();
-    info!("{:?}", &log_format);
-
-    let client = Client::new();
-    let res = client.get(&format!("http://{}:8086/query?q=CREATE DATABASE mydb", influxdb_host))
-        .send()
-        .unwrap();
-    assert_eq!(res.status, StatusCode::Ok);
+    */
 
     let amqp_url = format!("amqp://{}//", rabbitmq_host);
     let mut session = match Session::open_url(&amqp_url) {
@@ -158,7 +150,7 @@ fn main() {
     //queue: &str, passive: bool, durable: bool, exclusive: bool, auto_delete: bool, nowait: bool, arguments: Table
     channel.queue_declare(queue_name, false, false, false, false, false, table::new());
     info!("Queue {:?} declared", queue_name);
-    let process_consumer = ProcessConsumer { influxdb_host: influxdb_host, log_format: log_format };
+    let process_consumer = ProcessConsumer { influxdb_host: influxdb_host };
     channel.basic_consume(process_consumer, queue_name, "", false, false, false, false, table::new());
     channel.start_consuming();
     channel.close(200, "Closing channel".to_string());
