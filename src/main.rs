@@ -95,10 +95,9 @@ impl Consumer for ProcessConsumer {
                 Err(why) => panic!("couldn't open {}: {}", path.display(),
                                                            Error::description(&why)),
             };
-            //TODO: should not be a conf set, just see if first line starts with "{" to
-            // select json or not
-            let buf_reader = BufReader::new(file);
+            let mut buf_reader = BufReader::new(file);
             let mut line = String::new();
+            buf_reader.read_line(&mut line);
             if (line.starts_with("{")) {
                 payload = handle_json(buf_reader);
             } else {
