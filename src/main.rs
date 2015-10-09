@@ -65,7 +65,7 @@ fn handle_text(buf_reader: BufReader<File>) -> String {
     for line in buf_reader.lines() {
         let text = line.unwrap();
         let mut caps = date_re.captures(&text).unwrap();
-        let timestamp = UTC.datetime_from_str(caps.at(0).unwrap(), "%Y-%m-%d %H:%M:%S").unwrap().timestamp();
+        let timestamp = UTC.datetime_from_str(caps.at(0).unwrap(), "%Y-%m-%d %H:%M:%S").unwrap().timestamp() * 1000000000;
         caps = username_re.captures(&text).unwrap();
         let username = caps.at(1).unwrap();
         caps = operation_re.captures(&text).unwrap();
@@ -128,7 +128,7 @@ fn main() {
         Err(_) => panic!("couldn't find service host for rabbitmq")
     };
     /*
-    let etcd_host = match env::var("ETCD_SERVICE_HOST") {
+    let etcd_host = match env::var("ETCD0_SERVICE_HOST") {
         Ok(val) => val,
         Err(_) => panic!("couldn't find service host for etcd")
     };
