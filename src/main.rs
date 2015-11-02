@@ -42,7 +42,7 @@ fn handle_json(buf_reader: BufReader<File>) -> String {
                 let operation = obj.get("operation").unwrap().as_string().unwrap();
                 let username = obj.get("username").unwrap().as_string().unwrap();
                 let timestamp = obj.get("eventTime").unwrap().as_i64().unwrap() * 1000000;
-                let stat = format!("operation_{},username={} value=1i {}\n", operation, username, timestamp);
+                let stat = format!("operation,name={},username={} value=1i {}\n", operation, username, timestamp);
                 payload = payload + &stat;
 
             },
@@ -70,7 +70,7 @@ fn handle_text(buf_reader: BufReader<File>) -> String {
         let username = caps.at(1).unwrap();
         caps = operation_re.captures(&text).unwrap();
         let operation = caps.at(1).unwrap();
-        let stat = format!("operation_{},username={} value=1i {}\n", operation, username, timestamp);
+        let stat = format!("operation,name={},username={} value=1i {}\n", operation, username, timestamp);
         payload = payload + &stat;
     }
     return payload;
