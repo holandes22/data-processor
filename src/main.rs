@@ -99,9 +99,9 @@ impl Consumer for ProcessConsumer {
             let mut line = String::new();
             buf_reader.read_line(&mut line);
             if (line.starts_with("{")) {
-                payload = handle_json(buf_reader);
+                payload = payload + &handle_json(buf_reader);
             } else {
-                payload = handle_text(buf_reader);
+                payload = payload + &handle_text(buf_reader);
             }
         }
         let client = Client::new();
