@@ -42,7 +42,8 @@ fn handle_json(buf_reader: BufReader<File>) -> String {
                 let operation = obj.get("operation").unwrap().as_string().unwrap();
                 let username = obj.get("username").unwrap().as_string().unwrap();
                 let timestamp = obj.get("eventTime").unwrap().as_i64().unwrap() * 1000000;
-                let stat = format!("operation,name={},username={} value=1i {}\n", operation, username, timestamp);
+                let ip_address = obj.get("ipAddress").unwrap().as_string().unwrap();
+                let stat = format!("operation,name={},username={},ip_address={} value=1i {}\n", operation, username, ip_address, timestamp);
                 payload = payload + &stat;
 
             },
@@ -61,6 +62,7 @@ fn handle_text(buf_reader: BufReader<File>) -> String {
     let date_re = Regex::new(r"(?P<date>\S*) (?P<time>[\d:]+)").unwrap();
     let username_re = Regex::new(r".*ugi=(?P<user>[\w]+)").unwrap();
     let operation_re = Regex::new(r".*cmd=(?P<operation>[\w]+)").unwrap();
+    let ip_address_re = Regex::new(r".*ip=(?P<ip_address>/[\w]+)").unwrap();
 
     for line in buf_reader.lines() {
         let text = line.unwrap();
@@ -70,7 +72,9 @@ fn handle_text(buf_reader: BufReader<File>) -> String {
         let username = caps.at(1).unwrap();
         caps = operation_re.captures(&text).unwrap();
         let operation = caps.at(1).unwrap();
-        let stat = format!("operation,name={},username={} value=1i {}\n", operation, username, timestamp);
+        caps = ip_address_re.captures(&text).unwrap();
+        let ip_address = caps.at(1).unwrap();
+        let stat = format!("operation,name={},username={},ip_address={} value=1i {}\n", operation, username, ip_address, timestamp);
         payload = payload + &stat;
     }
     return payload;
