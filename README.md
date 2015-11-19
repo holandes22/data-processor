@@ -18,3 +18,8 @@ You can inspect logs:
 
 sudo docker exec -i -t <id> bash
 less data/log/collector.log
+
+# Compile
+docker build -t process-build -f Dockerfile-compile .
+docker create process-build
+docker cp $id:/tmp/target/release/process dist
