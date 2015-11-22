@@ -7,6 +7,7 @@ authors = ["Pablo Klijnjan <pabloklijnjan@gmail.com>"]
 git = "https://github.com/Antti/rust-amqp"
 
 [dependencies]
+time = "0.1"
 log = "*"
 glob = "*"
 hyper = "*"

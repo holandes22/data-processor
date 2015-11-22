@@ -1,4 +1,4 @@
-FROM rustcompile
+FROM rustcompile  # A base image (debian) containing rustc (same version) and cargo
 
 WORKDIR /tmp
 

@@ -3,12 +3,14 @@ extern crate log;
 extern crate glob;
 extern crate etcd;
 extern crate amqp;
+extern crate time;
 extern crate hyper;
 extern crate regex;
 extern crate chrono;
 extern crate env_logger;
 extern crate rustc_serialize;
 
+use std::fs;
 use std::env;
 use std::thread;
 use std::fs::File;
@@ -28,6 +30,7 @@ use amqp::basic::Basic;
 use amqp::session::Session;
 use amqp::channel::{Channel, Consumer};
 use etcd::Client as EtcdClient;
+use time::PreciseTime;
 use chrono::{DateTime, UTC, Local, TimeZone};
 
 
@@ -102,11 +105,17 @@ impl Consumer for ProcessConsumer {
             let mut buf_reader = BufReader::new(file);
             let mut line = String::new();
             buf_reader.read_line(&mut line);
+            let start_time = PreciseTime::now();
             if (line.starts_with("{")) {
                 payload = payload + &handle_json(buf_reader);
             } else {
                 payload = payload + &handle_text(buf_reader);
             }
+            let end_time = PreciseTime::now();
+            let metadata = fs::metadata(path.to_str().unwrap()).unwrap();
+            let notification = format!("Processing file {} of size {} bytes took {} sec", path.to_str().unwrap(), metadata.len().to_string(), start_time.to(end_time));
+            channel.basic_publish("", "notifier", true, false,
+                protocol::basic::BasicProperties{ content_type: Some("text".to_string()), ..Default::default()}, (notification.into_bytes()).to_vec());
         }
         let client = Client::new();
         let res = client.post(&format!("http://{}:8086/write?db=data_stats", &self.influxdb_host.to_string()))
@@ -152,6 +161,7 @@ fn main() {
     let queue_name = "processor";
     //queue: &str, passive: bool, durable: bool, exclusive: bool, auto_delete: bool, nowait: bool, arguments: Table
     channel.queue_declare(queue_name, false, false, false, false, false, table::new());
+    channel.queue_declare("notifier", false, false, false, false, false, table::new());
     info!("Queue {:?} declared", queue_name);
     let process_consumer = ProcessConsumer { influxdb_host: influxdb_host };
     channel.basic_consume(process_consumer, queue_name, "", false, false, false, false, table::new());
